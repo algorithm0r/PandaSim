@@ -249,6 +249,7 @@ var SiteMap = function (params, sitelist) {
 }
 
 SiteMap.prototype.reset = function () {
+    console.log("Map reset.");
     for (var i = 0; i < this.params.numsites; i++) {
         this.sitelist[i].totalsex = 0;
         this.sitelist[i].totalasex = 0;

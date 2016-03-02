@@ -526,6 +526,7 @@ Gene.prototype.mutate = function () {
         var gp = new Memeplex(this.params);
         gp.genes = [];
         gp.gen = this.gen + 1;
+        console.log("cloned");
         for (var i = start; i < finish; i++) {
             gp.genes.push(this.genes[i].clone());
         }

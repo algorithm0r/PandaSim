@@ -65,6 +65,9 @@ function Agent(params, id) {
     this.socialized = 0;
     this.parentrelated = -1;
 
+    this.learning = params.learning;
+    this.socializing = params.socializing;
+
     //console.log(id);
     this.id = id;
     this.mates = [];
@@ -82,7 +85,7 @@ Agent.prototype.day = function () {
         //    console.log(this.bestday.siteList);
         //    console.log(this.bestday.gen);
         //}
-        if (this.bestday.learn > 0 && this.resources === this.bestday.reward) {
+        if (this.params.learning && this.bestday.learn > 0 && this.resources === this.bestday.reward) {
             //console.log("New Memeplex Created");
             var newMemeplex = this.bestday.clone();
             newMemeplex.mutate();
@@ -131,10 +134,9 @@ Agent.prototype.update = function () {
                 var reward = gene.site.gather(gene.perm).reward;
 
                 // simple reinforcement learning
-                if (gene.learn > 0 && reward !== gene.learnedReward) gene.learnedReward = reward;
+                if (this.params.learning && gene.learn > 0 && reward !== gene.learnedReward) gene.learnedReward = reward;
 
                 this.resources += reward;
-                //console.log(this.lastindex + j + " resources " + this.resources);
             }
             this.lastindex = i;
             this.site = this.bestday.genes[i].site.index;

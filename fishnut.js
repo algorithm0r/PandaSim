@@ -67,10 +67,12 @@ Population.prototype.day = function () {
     //console.log("Day Start " + Math.floor(Date.now() % 100000) / 1000);
     this.days++;
     if (this.days > this.params.runlength || this.agents.length === 0) {
-        this.newPop = new Population(this.params);
-        //        this = new Population(this.params);
-        if (this.days > this.params.runlength) {
-        }
+        nP();
+
+        //this.newPop = new Population(this.params);
+        ////        this = new Population(this.params);
+        //if (this.days > this.params.runlength) {
+        //}
     }
     this.elapsed = this.params.maxenergy;
     this.dayasex = 0;
@@ -235,8 +237,7 @@ Population.prototype.day = function () {
             }
 
             // social learning intervals
-            agent.social = true; // hack... move to params
-            if (agent.social && agent.bestday) {
+            if (this.params.socializing && agent.bestday) {
                 var ints = agent.bestday.socialIntervals;
                 if (ints === undefined) console.log(agent.bestday + " " + agent.energy);
                 for (var j = 0; j < ints.length; j++) {
@@ -255,21 +256,16 @@ Population.prototype.day = function () {
                 var gp = agent.genome.geneplex;
                 if (gp) {
                     var sl = gp.siteList;
-                    sl = [gp.genes.length].concat(sl);
                     //console.log(sl);
 
-                    genomeLog.push(agent.id + " " + gp.genes.length + " " + gp.siteList.join(" "));
+                    genomeLog.push(agent.id + " " + gp.genes.length + " " + sl.join(" "));
                 }
                 var psl = [];
                 if (agent.bestday && agent.bestday.indexlist) {
-                    var index = agent.bestday.indexlist.length - 1;
-                    psl = [index];
-                    var str = agent.id + " " + index + " ";
-                    for (var j = 0; j < agent.bestday.indexlist.length - 1; j++) {
-                        psl.push(agent.bestday.indexlist[j].index);
-                    }
-                    str += psl.join(" ");
-                    phenoLog.push(str);
+                    var sl = agent.bestday.siteList;
+                    //console.log(sl);
+
+                    phenoLog.push(agent.id + " " + sl.length + " " + sl.join(" "));
                 }
                 pop.push({ id: agent.id, genome: sl, phenome: psl });
 
@@ -305,34 +301,36 @@ Population.prototype.day = function () {
 
     // social learning
     //console.log("Start Social " + Date.now());
-    console.log("Sex: " + sexIntervals.partners.length + " Social: " + socialIntervals.partners.length);
+    //console.log("Sex: " + sexIntervals.partners.length + " Social: " + socialIntervals.partners.length);
     //console.log("Social Start " + Math.floor(Date.now() % 100000) / 1000);
-    for (var i = 0; i < socialIntervals.partners.length; i++) {
-        var partner = socialIntervals.partners[i];
-        var agent = partner.mother;
-        var other = partner.father;
-        //if (!agent) {
-        //    console.log(partner.agent);
-        //    console.log(this.agents);
-        //}
+    if (this.params.socializing) {
+        for (var i = 0; i < socialIntervals.partners.length; i++) {
+            var partner = socialIntervals.partners[i];
+            var agent = partner.mother;
+            var other = partner.father;
+            //if (!agent) {
+            //    console.log(partner.agent);
+            //    console.log(this.agents);
+            //}
 
-        if (other.bestday.index !== -1) {
-            var mp = other.bestday.clone();
-            mp.mutate();
-            var site = mp.genes[0].site.index;
-            if (!agent.memome.memeplexes[site]) agent.memome.memeplexes[site] = [];
-            agent.memome.memeplexes[site].push(mp);
-        }
+            if (other.bestday.index !== -1) {
+                var mp = other.bestday.clone();
+                mp.mutate();
+                var site = mp.genes[0].site.index;
+                if (!agent.memome.memeplexes[site]) agent.memome.memeplexes[site] = [];
+                agent.memome.memeplexes[site].push(mp);
+            }
 
-        //console.log(agent.bestday);
-        if (agent.bestday.index !== -1) {
-            var mp = agent.bestday.clone();
-            mp.mutate();
-            var site = mp.genes[0].site.index;
-            if (!other.memome.memeplexes[site]) other.memome.memeplexes[site] = [];
-            other.memome.memeplexes[site].push(mp);
+            //console.log(agent.bestday);
+            if (agent.bestday.index !== -1) {
+                var mp = agent.bestday.clone();
+                mp.mutate();
+                var site = mp.genes[0].site.index;
+                if (!other.memome.memeplexes[site]) other.memome.memeplexes[site] = [];
+                other.memome.memeplexes[site].push(mp);
+            }
+            this.params.map.sitelist[partner.site].social++;
         }
-        this.params.map.sitelist[partner.site].social++;
     }
     //console.log("Start Sex " + Date.now());
 
@@ -422,11 +420,13 @@ Population.prototype.day = function () {
         this.memeStats.optimized.push(memeStats.optimized / livingAgents);
 
         var log = {
-            run: "2016",
+            run: "2016final",
             numagent: this.params.numagent,
             name: this.params.mapname,
             day: this.days,
             asexualon: this.params.asexualon,
+            learning: this.params.learning,
+            socializing: this.params.socializing,
 
             children: this.children,
             geneStats: this.geneStats,
@@ -500,6 +500,10 @@ Population.prototype.update = function () {
     }
 }
 
+var fnn = {};
+
+var nP;
+
 var ASSET_MANAGER = new AssetManager();
 var socket = null;
 if (window.io !== undefined) {
@@ -520,11 +524,11 @@ ASSET_MANAGER.downloadAll(function () {
     var loadmap = document.getElementById('loadmap');
     var newmap = document.getElementById('newmap');
     var simStart = false;
+    var run = 0;
 
     var ctx = canvas.getContext('2d');
     var gameEngine = new GameEngine();
 
-    var fnn = {};
     fnn.engine = gameEngine;
 
     var p;
@@ -571,6 +575,23 @@ ASSET_MANAGER.downloadAll(function () {
     }
 
     var newPop = function () {
+        fnn.map.reset();
+
+        if (run === 2) {
+            fnn.learning = true;
+            fnn.socializing = true;
+        }
+        if (run === 1) {
+            fnn.learning = true;
+            fnn.socializing = false;
+        }
+        if (run === 0) {
+            fnn.learning = false;
+            fnn.socializing = false;
+        }
+        console.log("learning: " + fnn.learning + " socializing: " + fnn.socializing + " run: " + run);
+        run = (run + 1) % 3;
+
         fnn.numagent = document.getElementById('numagent') ? parseInt(document.getElementById('numagent').value) : 1;
         fnn.maxenergy = document.getElementById('maxenergy') ? parseInt(document.getElementById('maxenergy').value) : 50;
         fnn.asexual = document.getElementById('asexual') ? parseInt(document.getElementById('asexual').value) : 50;
@@ -599,6 +620,8 @@ ASSET_MANAGER.downloadAll(function () {
         if (gameEngine.entities.length === 1) gameEngine.entities.splice(0, 1);
         gameEngine.addEntity(renderer);
     }
+
+    nP = newPop;
 
     newMap();
     fnn.pause = true;
