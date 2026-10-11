@@ -450,7 +450,7 @@ Population.prototype.day = function () {
         };
         //console.log("Data logged day " + this.days);
         //console.log(socket);
-        socket.emit("savepop", log);
+        if (socket) socket.emit("savepop", log);
    }
     if (endDay()) {
         if (this.params.download) {
