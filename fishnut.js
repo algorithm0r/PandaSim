@@ -510,10 +510,6 @@ if (window.io !== undefined) {
     console.log("Database connected!");
     socket = io.connect('http://76.28.150.193:8888');
 }
-ASSET_MANAGER.queueDownload("./img/FishSite.png");
-ASSET_MANAGER.queueDownload("./img/NutSite.png");
-ASSET_MANAGER.queueDownload("./img/Hut.png");
-ASSET_MANAGER.queueDownload("./img/FishNutter.png");
 
 ASSET_MANAGER.downloadAll(function () {
     console.log("starting up da sheild");
